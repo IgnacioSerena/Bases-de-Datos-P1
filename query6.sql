@@ -1,14 +1,27 @@
 --Consulta 6
+WITH Retrasos AS (
+  SELECT
+    f.flight_no,
+    (f.actual_arrival - f.scheduled_arrival) AS retraso
+  FROM
+    flights f
+)
 SELECT
-    f.flight_no AS "flight no",
-    AVG(EXTRACT(EPOCH FROM (f.actual_arrival - f.scheduled_arrival))) AS "Retraso Medio"
-FROM flights AS f
-GROUP BY f.flight_no
-HAVING AVG(EXTRACT(EPOCH FROM (f.actual_arrival - f.scheduled_arrival))) = (
-    SELECT MAX(avg_delay)
-    FROM (
-        SELECT flight_no, AVG(EXTRACT(EPOCH FROM (actual_arrival - scheduled_arrival))) AS avg_delay
-        FROM flights
-        GROUP BY flight_no
-    ) AS Subquery
-);
+  r.flight_no,
+  AVG(r.retraso) AS retraso_promedio
+FROM
+  Retrasos r
+GROUP BY
+  r.flight_no
+HAVING
+  AVG(r.retraso) = (
+    SELECT
+      MAX(avg_retraso)
+    FROM
+      (SELECT
+        AVG(retraso) AS avg_retraso
+      FROM
+        Retrasos
+      GROUP BY
+        flight_no) AS subquery
+  );

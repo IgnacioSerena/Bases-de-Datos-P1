@@ -1,20 +1,26 @@
 --Consulta 1
+WITH ReservasIdaVuelta AS (
+  SELECT
+    b.book_ref,
+    t.ticket_no,
+    f1.departure_airport AS aeropuerto_salida,
+    f2.arrival_airport AS aeropuerto_llegada
+  FROM
+    bookings b
+    JOIN tickets t ON b.book_ref = t.book_ref
+    JOIN ticket_flights tf1 ON t.ticket_no = tf1.ticket_no
+    JOIN flights f1 ON tf1.flight_id = f1.flight_id
+    JOIN ticket_flights tf2 ON t.ticket_no = tf2.ticket_no
+    JOIN flights f2 ON tf2.flight_id = f2.flight_id
+  WHERE
+    f1.scheduled_departure = (SELECT MIN(scheduled_departure) FROM flights WHERE flight_id = tf1.flight_id)
+    AND f2.scheduled_arrival = (SELECT MAX(scheduled_arrival) FROM flights WHERE flight_id = tf2.flight_id)
+    AND f1.departure_airport = f2.arrival_airport
+)
 SELECT
-    f.departure_airport AS "Código del Aeropuerto de Salida",
-    COUNT(b.book_ref) AS "Número de Reservas"
-FROM flights AS f
-JOIN (
-    SELECT
-        tf.ticket_no,
-        tf.flight_id,
-        MIN(f.scheduled_departure) AS first_departure,
-        MAX(f.scheduled_arrival) AS last_arrival
-    FROM ticket_flights AS tf
-    JOIN flights AS f ON tf.flight_id = f.flight_id
-    GROUP BY tf.ticket_no
-) AS subquery ON f.scheduled_departure = subquery.first_departure
-           AND f.scheduled_arrival = subquery.last_arrival
-JOIN ticket_flights AS tf ON f.flight_id = tf.flight_id
-JOIN bookings AS b ON tf.ticket_no = b.book_ref
-GROUP BY f.departure_airport
-ORDER BY f.departure_airport;
+  riv.aeropuerto_salida AS codigo_aeropuerto,
+  COUNT(DISTINCT rv.book_ref) AS num_reservas
+FROM
+  ReservasIdaVuelta riv
+GROUP BY
+  riv.aeropuerto_salida;
